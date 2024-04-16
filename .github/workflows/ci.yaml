@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - 'test.txt'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Echo Build Step
+        run: echo "Building..."
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Echo Test Step
+        run: echo "Testing..."
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Echo Deploy Step
+        run: echo "Deploying..."
