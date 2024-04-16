@@ -49,13 +49,18 @@ jobs:
       - name: Check if line 4 is unchanged
         id: check-line
         run: |
-          CHANGED=$(git diff HEAD^ HEAD test.txt | grep -E '^[+-]' | sed 's/^[+-]//g' | sed -n 4p)
-          if [ -z "$CHANGED" ]; then
-            echo "Line 4 unchanged, proceeding with workflow..."
-            echo "::set-output name=unchanged::true"
+          if git show HEAD^:test.txt &> /dev/null; then
+            CHANGED=$(git diff HEAD^ HEAD test.txt | grep -E '^[+-]' | sed 's/^[+-]//g' | sed -n 4p)
+            if [ -z "$CHANGED" ]; then
+              echo "Line 4 unchanged, proceeding with workflow..."
+              echo "::set-output name=unchanged::true"
+            else
+              echo "Line 4 changed, skipping workflow..."
+              echo "::set-output name=unchanged::false"
+            fi
           else
-            echo "Line 4 changed, skipping workflow..."
-            echo "::set-output name=unchanged::false"
+            echo "Initial commit, proceeding with workflow..."
+            echo "::set-output name=unchanged::true"
           fi
         shell: bash
 
