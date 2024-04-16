@@ -1,3 +1,38 @@
+# name: CI
+
+# on:
+#   push:
+#     paths:
+#       - 'test.txt'
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+#       - name: Echo Build Step
+#         run: echo "Building..."
+
+#   test:
+#     runs-on: ubuntu-latest
+#     needs: build
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+#       - name: Echo Test Step
+#         run: echo "Testing..."
+
+#   deploy:
+#     runs-on: ubuntu-latest
+#     needs: test
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+#       - name: Echo Deploy Step
+#         run: echo "Deploying..."
+
+
 name: CI
 
 on:
@@ -6,8 +41,28 @@ on:
       - 'test.txt'
 
 jobs:
-  build:
+  check-line:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Check if line 4 is unchanged
+        id: check-line
+        run: |
+          CHANGED=$(git diff HEAD^ HEAD test.txt | grep -E '^[+-]' | sed 's/^[+-]//g' | sed -n 4p)
+          if [ -z "$CHANGED" ]; then
+            echo "Line 4 unchanged, proceeding with workflow..."
+            echo "::set-output name=unchanged::true"
+          else
+            echo "Line 4 changed, skipping workflow..."
+            echo "::set-output name=unchanged::false"
+          fi
+        shell: bash
+
+  build:
+    needs: check-line
+    runs-on: ubuntu-latest
+    if: ${{ needs.check-line.outputs.unchanged == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -15,8 +70,9 @@ jobs:
         run: echo "Building..."
 
   test:
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
+    if: ${{ needs.check-line.outputs.unchanged == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -24,8 +80,9 @@ jobs:
         run: echo "Testing..."
 
   deploy:
-    runs-on: ubuntu-latest
     needs: test
+    runs-on: ubuntu-latest
+    if: ${{ needs.check-line.outputs.unchanged == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
